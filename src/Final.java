@@ -1,9 +1,10 @@
 package src;
-
-import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 import java.io.File;
 
 public class Final {
@@ -34,7 +35,7 @@ public class Final {
                     {
                         ArrayList<String> name = new ArrayList<>();
                         findFile(location, name);
-                        magic_word = extraSpaceFilter(RandomName(name)).toLowerCase();
+                        magic_word = extraSpaceFilter(getRandomName(name)).toLowerCase();
 
                         key = 1;
                     }
@@ -201,12 +202,12 @@ public class Final {
     // this method takes whatever string and space it out by adding " " after each
     // letter.
     public static String spaceOut(String whatever) {
-        String spaced_out = "";
+        StringBuilder spacedOut = new StringBuilder();
         for (int i = 0; i < whatever.length(); i++) {
-            spaced_out += whatever.substring(i, i + 1);
-            spaced_out += " ";
+            spacedOut.append(whatever.charAt(i));
+            spacedOut.append(" ");
         }
-        return spaced_out;
+        return spacedOut.toString();
     }
 
     // *************************************************************************************************************************************************************************
@@ -215,57 +216,89 @@ public class Final {
     // noting, this method isnt perfect, but it works the way it is. probelm has to
     // do with functionality with errors.
     // if the string is made all of spaces, then it will leave one space bar.
-    public static String extraSpaceFilter(String user_input) {
-        while (user_input.indexOf(" ") == 0 && user_input.length() > 1) {
-            user_input = user_input.substring(1);
-        }
-        while (user_input.lastIndexOf(" ") == user_input.length() - 1 && user_input.length() > 1) {
-            user_input = user_input.substring(0, user_input.length() - 1);
-        }
+    // public static String extraSpaceFilter(String user_input) {
+    // while (user_input.indexOf(" ") == 0 && user_input.length() > 1) {
+    // user_input = user_input.substring(1);
+    // }
+    // while (user_input.lastIndexOf(" ") == user_input.length() - 1 &&
+    // user_input.length() > 1) {
+    // user_input = user_input.substring(0, user_input.length() - 1);
+    // }
 
-        int hook = 0;
-        while (user_input.indexOf(" ", hook + 1) != -1) {
-            hook = user_input.indexOf(" ", hook + 1);
-            while (user_input.substring(hook + 1, hook + 2).equals(" ")) {
-                String part1 = user_input.substring(0, hook);
-                String part2 = user_input.substring(hook + 1);
-                user_input = part1 + part2;
-            }
-        }
-        return user_input;
+    // int hook = 0;
+    // while (user_input.indexOf(" ", hook + 1) != -1) {
+    // hook = user_input.indexOf(" ", hook + 1);
+    // while (user_input.substring(hook + 1, hook + 2).equals(" ")) {
+    // String part1 = user_input.substring(0, hook);
+    // String part2 = user_input.substring(hook + 1);
+    // user_input = part1 + part2;
+    // }
+    // }
+    // return user_input;
+    // }
+    public static String extraSpaceFilter(String userInput) {
+        userInput = userInput.trim(); // remove leading/trailing whitespace
+        userInput = userInput.replaceAll("\\s+", " "); // replace multiple spaces with single space
+        return userInput;
     }
 
     // *************************************************************************************************************************************************************************
     // this method draw the hanged men steps based on health, except it doesmt draw
     // health 0.
+    // public static void drawPic(int health) {
+    // if (health == 0) {
+    // return;
+    // } // will draw Game-Over screen seperatly.so when zero, then exit.
+    // String face = "";
+    // switch (health) {
+    // case 7:
+    // face = "(^0^ )";
+    // break;
+    // case 6:
+    // face = "(^-^ )";
+    // break;
+    // case 5:
+    // face = "(^_^;)";
+    // break;
+    // case 4:
+    // face = "(._.;)";
+    // break;
+    // case 3:
+    // face = "(o_O )";
+    // break;
+    // case 2:
+    // face = "(-_- )";
+    // break;
+    // case 1:
+    // face = "(~<_~)";
+    // break;
+    // }
+
+    // System.out.println(" __________________________");
+    // System.out.println("|The Nuke Will Explode At..|");
+    // System.out.println("| ___ _ {(_(_^ ) |");
+    // System.out.println("| [___] _|_|_ (_ { } |");
+    // System.out.println("| /*\\ " + face + " ()^{ |");
+    // System.out.println("| [===] /|_|\\ | {|");
+    // System.out.println("|~~|(" + health + ")|~~~~~~|~|~~~~~~|(0)|");
+    // System.out.println("|~ (___) ~~ ~ ~~~ ~ | |");
+    // System.out.println("|______________________|___|");
+    // }
     public static void drawPic(int health) {
-        if (health == 0) {
+        if (health <= 0) {
             return;
-        } // will draw Game-Over screen seperatly.so when zero, then exit.
-        String face = "";
-        switch (health) {
-            case 7:
-                face = "(^0^ )";
-                break;
-            case 6:
-                face = "(^-^ )";
-                break;
-            case 5:
-                face = "(^_^;)";
-                break;
-            case 4:
-                face = "(._.;)";
-                break;
-            case 3:
-                face = "(o_O )";
-                break;
-            case 2:
-                face = "(-_- )";
-                break;
-            case 1:
-                face = "(~<_~)";
-                break;
         }
+
+        String[] faces = {
+                "(^0^ )",
+                "(^-^ )",
+                "(^_^;)",
+                "(._.;)",
+                "(o_O )",
+                "(-_- )",
+                "(~<_~)"
+        };
+        String face = faces[Math.min(health - 1, faces.length - 1)];
 
         System.out.println(" __________________________");
         System.out.println("|The Nuke Will Explode At..|");
@@ -273,13 +306,13 @@ public class Final {
         System.out.println("|  [___]     _|_|_  (_ { } |");
         System.out.println("|   /*\\      " + face + "   ()^{ |");
         System.out.println("|  [===]     /|_|\\     |  {|");
-        System.out.println("|~~|(" + health + ")|~~~~~~|~|~~~~~~|(0)|");
+        System.out.printf("|~~|(%d)|~~~~~~|~|~~~~~~|(0)|%n", health);
         System.out.println("|~ (___) ~~  ~  ~~~  ~ |   |");
         System.out.println("|______________________|___|");
     }
 
     // *************************************************************************************************************************************************************************
-    public static void loseDisplay(String magic_word) {
+    public static void loseDisplay(String magicWord) {
         System.out.println(" ___________________  __________________  _______________________");
         System.out.println("|                   ||       _--_       ||         _____         |");
         System.out.println("|                   ||     _(    )_     ||        |     |\\       |");
@@ -288,9 +321,9 @@ public class Final {
         System.out.println("| Bomb Iintiated... || (______________) ||    |___  lol  ___||   |");
         System.out.println("|                   ||_______))((_______||        |     |\\__\\|   |");
         System.out.println("|___________________||__________________||________|_____||_______|");
-        System.out.println("");
+        System.out.println();
         System.out.println("                          GAME OVER");
-        System.out.println("The word was: " + capitalize(magic_word));
+        System.out.println("The word was: " + capitalize(magicWord));
     }
 
     // *************************************************************************************************************************************************************************
@@ -310,64 +343,110 @@ public class Final {
     // ************************************************************************************************************************************************************************
     // this method takes a method and capitalize each first letter in every
     // word.This may not be a perfect proof for errors and such.
-    public static String capitalize(String user_input) {
-        // Capitlize very first Letter:
-        String first_part = (user_input.substring(0, 1)).toUpperCase();// first part that is first letter capitalized.
-        String second_part = user_input.substring(1);// the rest of string without the first letter.
-        user_input = first_part + second_part;
-        // Donw with that.
+    // public static String capitalize(String user_input) {
+    // // Capitlize very first Letter:
+    // String first_part = (user_input.substring(0, 1)).toUpperCase();// first part
+    // that is first letter capitalized.
+    // String second_part = user_input.substring(1);// the rest of string without
+    // the first letter.
+    // user_input = first_part + second_part;
+    // // Donw with that.
 
-        // Capialize first letter subsequent to space:
-        int hook = 0;
-        while (user_input.indexOf(" ", hook + 1) != -1) {
-            hook = user_input.indexOf(" ", hook + 1); // toss the hook to the next space
-            String part1 = user_input.substring(0, hook + 1);// from begining to the space.
-            String part2 = (user_input.substring(hook + 1, hook + 2)).toUpperCase();// the actually letter/index to be
-                                                                                    // capitalized
-            String part3 = user_input.substring(hook + 2);// the reaming string after the capitalized index
-            user_input = part1 + part2 + part3;
+    // // Capialize first letter subsequent to space:
+    // int hook = 0;
+    // while (user_input.indexOf(" ", hook + 1) != -1) {
+    // hook = user_input.indexOf(" ", hook + 1); // toss the hook to the next space
+    // String part1 = user_input.substring(0, hook + 1);// from begining to the
+    // space.
+    // String part2 = (user_input.substring(hook + 1, hook + 2)).toUpperCase();//
+    // the actually letter/index to be
+    // // capitalized
+    // String part3 = user_input.substring(hook + 2);// the reaming string after the
+    // capitalized index
+    // user_input = part1 + part2 + part3;
+    // }
+    // return user_input;
+    // }
+    public static String capitalize(String user_input) {
+        String[] words = user_input.split(" ");
+        StringBuilder capitalized = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            if (word.length() > 0) {
+                String capitalizedWord = word.substring(0, 1).toUpperCase() + word.substring(1);
+                capitalized.append(capitalizedWord);
+                if (i < words.length - 1) {
+                    capitalized.append(" ");
+                }
+            }
         }
-        return user_input;
+
+        return capitalized.toString();
     }
 
     // ************************************************************************************************************************************************************************
     // Rijan's methods
-    public static String RandomName(ArrayList<String> name) {
-        String word;
-        word = (String) name.get(getRandomNumber(name));// getting the random word; I had to typecast here because you
-                                                        // cant convert an object into string.
-        return word;
+    // public static String RandomName(ArrayList<String> name) {
+    // String word;
+    // word = (String) name.get(getRandomNumber(name));// getting the random word; I
+    // had to typecast here because you
+    // // cant convert an object into string.
+    // return word;
 
+    // }
+    public static String getRandomName(ArrayList<String> names) {
+        int index = getRandomNumber(names);
+        return names.get(index);
     }
 
     // ************************************************************************************************************************************************************************
     // Rijan's method
     public static int getRandomNumber(ArrayList<String> name) {
-        int number = (int) (Math.random() * name.size() - 1) + 1;
-        return number;
+        return (int) (Math.random() * name.size() - 1) + 1;
     }
 
     // ************************************************************************************************************************************************************************
     // this method takesa string and turn in into blank version bt switching all
     // letters to underlines, and also it desplay word&letter counts for the user as
     // a hint.
-    public static String hideStringAndDisplay(String magic_word) {
-        int word_counter = 1;
-        int letter_counter = 0;
-        String blank = "";
-        for (int i = 0; i < magic_word.length(); i++) {
-            if (magic_word.indexOf(" ", i) - i == 0) {
-                blank += " ";
-                word_counter++;
+    // public static String hideStringAndDisplay(String magic_word) {
+    // int word_counter = 1;
+    // int letter_counter = 0;
+    // String blank = "";
+    // for (int i = 0; i < magic_word.length(); i++) {
+    // if (magic_word.indexOf(" ", i) - i == 0) {
+    // blank += " ";
+    // word_counter++;
+    // } else {
+    // blank += "_";
+    // letter_counter++;
+    // }
+    // }
+    // System.out.println("*The Text consists of " + word_counter + " word(s) and "
+    // + letter_counter + " letters: "
+    // + spaceOut(blank) + ".");
+
+    // return blank;
+    // }
+    public static String hideStringAndDisplay(String magicWord) {
+        int wordCount = 0;
+        int letterCount = 0;
+        StringBuilder hiddenWord = new StringBuilder();
+        for (int i = 0; i < magicWord.length(); i++) {
+            char c = magicWord.charAt(i);
+            if (Character.isWhitespace(c)) {
+                hiddenWord.append(' ');
+                wordCount++;
             } else {
-                blank += "_";
-                letter_counter++;
+                hiddenWord.append('_');
+                letterCount++;
             }
         }
-        System.out.println("*The Text consists of " + word_counter + " word(s) and " + letter_counter + " letters: "
-                + spaceOut(blank) + ".");
-
-        return blank;
+        String formattedWord = spaceOut(hiddenWord.toString());
+        System.out.printf("*The text consists of %d word(s) and %d letters: %s.%n",
+                wordCount + 1, letterCount, formattedWord);
+        return hiddenWord.toString();
     }
 
     // *************************************************************************************************************************************************************************
@@ -490,41 +569,61 @@ public class Final {
     // this method is made speicifically made to get user input for catigory number.
     // it takes it as a string becuase we cant error check intgers. then it
     // converted to an int.
+    // public static int getCatigoryNumber() {
+    // String something;
+    // int number = -1;
+    // while (number == -1) {
+    // something = (in.nextLine()).substring(0, 1);
+    // switch (something) {
+    // case "1":
+    // number = 1;
+    // break;
+    // case "2":
+    // number = 2;
+    // break;
+    // case "3":
+    // number = 3;
+    // break;
+    // case "4":
+    // number = 4;
+    // break;
+    // case "5":
+    // number = 5;
+    // break;
+    // case "6":
+    // number = 6;
+    // break;
+    // case "7":
+    // number = 7;
+    // break;
+    // case "8":
+    // number = (int) (Math.random() * 7) + 1;
+    // break;// if the user chose random, then we will choose a random for him.
+    // default:
+    // System.out.println("This input is invalid, try again:");
+    // }
+    // }
+    // return number;
+    // }
     public static int getCatigoryNumber() {
-        String something;
-        int number = -1;
-        while (number == -1) {
-            something = (in.nextLine()).substring(0, 1);
-            switch (something) {
-                case "1":
-                    number = 1;
-                    break;
-                case "2":
-                    number = 2;
-                    break;
-                case "3":
-                    number = 3;
-                    break;
-                case "4":
-                    number = 4;
-                    break;
-                case "5":
-                    number = 5;
-                    break;
-                case "6":
-                    number = 6;
-                    break;
-                case "7":
-                    number = 7;
-                    break;
-                case "8":
-                    number = (int) (Math.random() * 7) + 1;
-                    break;// if the user chose random, then we will choose a random for him.
-                default:
-                    System.out.println("This input is invalid, try again:");
+        String input;
+        int category = -1;
+        while (category == -1) {
+            input = in.nextLine();
+            if (input.length() == 1 && Character.isDigit(input.charAt(0))) {
+                int num = Integer.parseInt(input);
+                if (num >= 1 && num <= 8) {
+                    category = num;
+                }
+            }
+            if (category == -1) {
+                System.out.println("Invalid input. Please enter a number between 1 and 8:");
             }
         }
-        return number;
+        if (category == 8) {
+            category = (int) (Math.random() * 7) + 1;
+        }
+        return category;
     }
 
     // ***********************************************************************************************************************************************************************
