@@ -2,9 +2,10 @@
 
 A feature-rich, console-based hangman game written in Java with Docker containerization support. Now with multiple difficulty levels, hint systems, scoring, statistics, and much more!
 
-## 🚀 **NEW FEATURES** 
+## 🚀 **NEW FEATURES**
 
 ### 🎯 **Complete Game Overhaul**
+
 - **Main Menu System**: Navigate through game options, settings, statistics, and help
 - **Multiple Difficulty Levels**: Easy (12 lives), Normal (8 lives), Hard (6 lives), Expert (4 lives)
 - **Advanced Hint System**: Smart hints with limited usage based on difficulty
@@ -13,6 +14,7 @@ A feature-rich, console-based hangman game written in Java with Docker container
 - **Enhanced Visual Experience**: Color-coded output with emojis and better UI
 
 ### 🎲 **Enhanced Gameplay**
+
 - **Word Solving**: Guess entire words with `solve [word]` command
 - **Smart Hints**: Type `hint` for strategic clues (category, length, letters)
 - **200+ Words**: Expanded database across 8 categories
@@ -55,6 +57,7 @@ Java-Hangman/
 
 1. Ensure Java JDK is installed and in your PATH
 2. Run the batch script:
+
    ```cmd
    run.bat
    ```
@@ -62,11 +65,13 @@ Java-Hangman/
 ### Option 2: Docker (Recommended)
 
 #### Quick Start with Docker Compose
+
 ```bash
 docker compose up --build
 ```
 
 #### Manual Docker Commands
+
 ```bash
 # Build the image
 docker build -t java-hangman .
@@ -76,6 +81,7 @@ docker run -it java-hangman
 ```
 
 ### Option 3: Manual Compilation
+
 ```bash
 # Compile
 javac -d . src/Final.java
@@ -86,7 +92,7 @@ java src.Final
 
 ## How to Play
 
-1. **Choose Word Source**: 
+1. **Choose Word Source**:
    - Select "no" to use built-in categories
    - Select "yes" to load from an external file
 
@@ -94,7 +100,7 @@ java src.Final
    - 1: Car Brands
    - 2: Video Game Titles
 
-3. **Guess Letters**: 
+3. **Guess Letters**:
    - Enter one letter at a time
    - The game will show your progress with underscores
    - Wrong guesses reduce your health
@@ -122,20 +128,25 @@ java src.Final
 ## Development
 
 ### Authors
+
 - Rijan Timsina
 - Ibrahim Skouti
 
 ### Date
+
 06/19/2017
 
 ### Requirements
+
 - Java 11 or higher
 - Docker (for containerized deployment)
 
 ## File Formats
 
 ### Word List Files
+
 Word list files should contain one word or phrase per line:
+
 ```
 Toyota
 Honda
@@ -146,16 +157,19 @@ Volkswagen
 ## Troubleshooting
 
 ### Docker Issues
+
 - Ensure Docker is running
 - Use `docker compose up --build` to rebuild if needed
 - For interactive mode, always use `-it` flags
 
 ### Java Issues
+
 - Verify Java is installed: `java -version`
 - Ensure JAVA_HOME is set correctly
 - Check that javac is in your PATH
 
 ### Game Issues
+
 - External files must exist and be readable
 - Word files should not be empty
 - Use absolute paths for external files when running natively
@@ -165,9 +179,11 @@ A classic hangman game implemented in Java by Rijan Timsina & Ibrahim Skouti.
 ## How to Run
 
 ### Option 1: Using the batch file (Windows)
+
 1. Double-click `run.bat` to compile and run the game
 
 ### Option 2: Manual compilation
+
 1. Open command prompt in the project directory
 2. Compile: `javac -d . src/Final.java`
 3. Run: `java src.Final`
@@ -182,10 +198,12 @@ A classic hangman game implemented in Java by Rijan Timsina & Ibrahim Skouti.
 ## External Files
 
 The game comes with two sample external files in the `data/` folder:
+
 - `Car_Brands.txt` - Contains various car brand names
 - `Video_Game_Titles.txt` - Contains popular video game titles
 
 To use these files, when prompted for a file location, enter:
+
 - `data/Car_Brands.txt`
 - `data/Video_Game_Titles.txt`
 
