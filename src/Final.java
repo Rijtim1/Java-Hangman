@@ -28,20 +28,22 @@ public class Final {
             if (q.equals("yes")) {
                 do {
                     System.out.println("Enter the location of the file,or type \"back\" to return");
-                    String location = extraSpaceFilter(in.nextLine()).toLowerCase();
+                    String location = extraSpaceFilter(in.nextLine());
 
-                    if (new File(location).exists() && new File(location).isFile())
-
-                    {
+                    if (location.toLowerCase().equals("back")) {
+                        break;
+                    }
+                    
+                    File file = new File(location);
+                    if (file.exists() && file.isFile()) {
                         ArrayList<String> name = new ArrayList<>();
                         findFile(location, name);
-                        magic_word = extraSpaceFilter(getRandomName(name)).toLowerCase();
-
-                        key = 1;
-                    }
-
-                    else if (location.equals("back")) {
-                        break;
+                        if (!name.isEmpty()) {
+                            magic_word = extraSpaceFilter(getRandomName(name)).toLowerCase();
+                            key = 1;
+                        } else {
+                            System.out.println("The file is empty or contains no valid words");
+                        }
                     } else {
                         System.out.println("The location is not found");
                     }
@@ -84,14 +86,16 @@ public class Final {
                 user_input = (extraSpaceFilter(in.nextLine())).toLowerCase(); // get user input and clean it with those
                                                                               // methods
 
+                if (user_input.isEmpty()) {
+                    System.out.println("Invalid input, try again.");
+                    continue;
+                }
+                
                 if (inputs.contains(user_input)) {
                     System.out.println("You already guessed this.");
                 } // if the variable input was found in the 'inputs' array, then sop.
-                if (user_input.equals(" ") || user_input.equals("")) {
-                    System.out.println("Invaled Input,try again.");
-                } // heck if the user intered anything realy.
-            } while (inputs.contains(user_input) || user_input.equals(" ") || user_input.equals(""));// if the string
-                                                                                                     // input
+                
+            } while (inputs.contains(user_input) || user_input.isEmpty());// if the string input
                                                                                                      // was found in the
                                                                                                      // 'inputs'
                                                                                                      // array,then
@@ -103,7 +107,6 @@ public class Final {
                                                                                                      // loop
                                                                                                      // to proceed the
                                                                                                      // program...
-            // ..also, if the user didnt enter anything then repeat this loop.
 
             inputs.add(user_input);// since it was already checked and cleared, we add it to the array so that the
                                    // user won't be able to say it again.
@@ -403,7 +406,7 @@ public class Final {
     // ************************************************************************************************************************************************************************
     // Rijan's method
     public static int getRandomNumber(ArrayList<String> name) {
-        return (int) (Math.random() * name.size() - 1) + 1;
+        return (int) (Math.random() * name.size());
     }
 
     // ************************************************************************************************************************************************************************
@@ -433,19 +436,25 @@ public class Final {
         int wordCount = 0;
         int letterCount = 0;
         StringBuilder hiddenWord = new StringBuilder();
+        boolean inWord = false;
+        
         for (int i = 0; i < magicWord.length(); i++) {
             char c = magicWord.charAt(i);
             if (Character.isWhitespace(c)) {
                 hiddenWord.append(' ');
-                wordCount++;
+                inWord = false;
             } else {
                 hiddenWord.append('_');
                 letterCount++;
+                if (!inWord) {
+                    wordCount++;
+                    inWord = true;
+                }
             }
         }
         String formattedWord = spaceOut(hiddenWord.toString());
         System.out.printf("*The text consists of %d word(s) and %d letters: %s.%n",
-                wordCount + 1, letterCount, formattedWord);
+                wordCount, letterCount, formattedWord);
         return hiddenWord.toString();
     }
 
@@ -638,15 +647,16 @@ public class Final {
 
             String sCurrentLine;
 
-            br = new BufferedReader(new FileReader(FILENAME));
-
             while ((sCurrentLine = br.readLine()) != null) {
-                name.add(sCurrentLine);
+                String cleanLine = extraSpaceFilter(sCurrentLine);
+                if (!cleanLine.isEmpty()) {
+                    name.add(cleanLine);
+                }
             }
         }
 
         catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error reading file: " + e.getMessage());
         }
 
         finally {
@@ -657,7 +667,7 @@ public class Final {
                 if (fr != null)
                     fr.close();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                System.out.println("Error closing file: " + ex.getMessage());
             }
         }
         return name;
