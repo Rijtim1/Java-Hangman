@@ -6,28 +6,110 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Final {
     static Scanner in = new Scanner(System.in);
+    
+    // Game statistics and settings
+    static int totalGamesPlayed = 0;
+    static int totalGamesWon = 0;
+    static int totalScore = 0;
+    static int currentGameScore = 0;
+    static String difficulty = "Normal";
+    static boolean hintsEnabled = true;
+    static boolean colorEnabled = true;
+    
+    // Difficulty settings
+    static int maxHealth = 8;
+    static int hintsAvailable = 3;
+    
+    // Color codes for console output
+    static final String RESET = "\u001B[0m";
+    static final String RED = "\u001B[31m";
+    static final String GREEN = "\u001B[32m";
+    static final String YELLOW = "\u001B[33m";
+    static final String BLUE = "\u001B[34m";
+    static final String PURPLE = "\u001B[35m";
+    static final String CYAN = "\u001B[36m";
+    static final String WHITE = "\u001B[37m";
+    static final String BOLD = "\u001B[1m";
 
     public static void main(String[] args) {
-
-        infoDisplay();// show legal information.
-
-        // PART ZERO : come up with the magic word, whether by exterior file or defult
-        // catigories.
+        infoDisplay();
+        
+        boolean playAgain = true;
+        
+        while (playAgain) {
+            // Show main menu
+            int menuChoice = showMainMenu();
+            
+            switch (menuChoice) {
+                case 1:
+                    playGame();
+                    break;
+                case 2:
+                    showSettings();
+                    break;
+                case 3:
+                    showStatistics();
+                    break;
+                case 4:
+                    showInstructions();
+                    break;
+                case 5:
+                    printColored("Thanks for playing! Goodbye! 👋", CYAN);
+                    playAgain = false;
+                    break;
+                default:
+                    printColored("Invalid choice. Please try again.", RED);
+            }
+            
+            if (playAgain && menuChoice == 1) {
+                System.out.println("\n" + YELLOW + "Would you like to play another round? (yes/no)" + RESET);
+                String response = extraSpaceFilter(in.nextLine()).toLowerCase();
+                playAgain = response.equals("yes") || response.equals("y");
+            }
+        }
+        
+        endDisplay();
+    }
+    
+    public static int showMainMenu() {
+        System.out.println("\n" + BOLD + CYAN + "═══════════════ MAIN MENU ═══════════════" + RESET);
+        System.out.println(BLUE + "1. 🎮 Play Hangman" + RESET);
+        System.out.println(PURPLE + "2. ⚙️  Settings" + RESET);
+        System.out.println(GREEN + "3. 📊 Statistics" + RESET);
+        System.out.println(YELLOW + "4. 📖 Instructions" + RESET);
+        System.out.println(RED + "5. 🚪 Exit Game" + RESET);
+        System.out.println(CYAN + "═══════════════════════════════════════" + RESET);
+        System.out.print("Enter your choice (1-5): ");
+        
+        try {
+            return Integer.parseInt(in.nextLine().trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+    
+    public static void playGame() {
+        currentGameScore = 0;
+        setDifficultySettings();
+        
+        // PART ZERO : come up with the magic word, whether by exterior file or default categories.
         String magic_word = null;
-        int key = 0;// when the magic_word has been assigned, we will get the key to get out of this
-                    // loop
+        String wordCategory = "";
+        int key = 0;
 
         do {
-            System.out.println("Do you want to user exterior file? yes or no");
+            printColored("Do you want to use an external file? (yes/no)", CYAN);
             String q = extraSpaceFilter(in.nextLine()).toLowerCase();
 
             // if the user entered "yes"
             if (q.equals("yes")) {
                 do {
-                    System.out.println("Enter the location of the file,or type \"back\" to return");
+                    printColored("Enter the location of the file, or type \"back\" to return", YELLOW);
                     String location = extraSpaceFilter(in.nextLine());
 
                     if (location.toLowerCase().equals("back")) {
@@ -40,167 +122,379 @@ public class Final {
                         findFile(location, name);
                         if (!name.isEmpty()) {
                             magic_word = extraSpaceFilter(getRandomName(name)).toLowerCase();
+                            wordCategory = "External File";
                             key = 1;
                         } else {
-                            System.out.println("The file is empty or contains no valid words");
+                            printColored("The file is empty or contains no valid words", RED);
                         }
                     } else {
-                        System.out.println("The location is not found");
+                        printColored("The location is not found", RED);
                     }
                 } while (key == 0);
             }
 
             // if the user enter "no"
             else if (q.equals("no")) {
-                magic_word = extraSpaceFilter(inGameWordSelector()).toLowerCase();
-                ;// make him choose catgory method.
+                String[] result = inGameWordSelector();
+                magic_word = extraSpaceFilter(result[0]).toLowerCase();
+                wordCategory = result[1];
                 key = 1;
             }
 
             // if the user entered gibberish.
             else {
-                System.out.println("Invalid input,try again.");
+                printColored("Invalid input, try again.", RED);
             }
 
         } while (key == 0);
         // PART ZERO DONE.
 
-        openingSequence();// Prologue
-        instructionsDisplay();// show manual
-        String blank = hideStringAndDisplay(magic_word);// here we get out blank var
-        System.out.println("\n**************************** BEGIN **************************************");
+        openingSequence();
+        displayGameInfo(wordCategory);
+        String blank = hideStringAndDisplay(magic_word);
+        System.out.println("\n" + BOLD + GREEN + "**************************** BEGIN **************************************" + RESET);
 
-        int health = 8;// you have 8 health
+        int health = maxHealth;
+        int hintsUsed = 0;
+        ArrayList<String> inputs = new ArrayList<>();
+        ArrayList<String> correctGuesses = new ArrayList<>();
+        ArrayList<String> wrongGuesses = new ArrayList<>();
 
-        ArrayList<String> inputs = new ArrayList<>();// user inputs will be stored in this var //used in part1
-
-        do {// enter the loop
-
-            // PART ONE : Check repeated inputs, prevent the player to enter the same thing
-            // more than once.
-
-            String user_input;// user input will be stored in this var
-
-            do {
-                System.out.print("\nWhat is your guess?");
-                user_input = (extraSpaceFilter(in.nextLine())).toLowerCase(); // get user input and clean it with those
-                                                                              // methods
-
-                if (user_input.isEmpty()) {
-                    System.out.println("Invalid input, try again.");
-                    continue;
+        do {
+            // Show current game status
+            showGameStatus(health, hintsUsed, correctGuesses, wrongGuesses, blank);
+            
+            String user_input = getUserInput(inputs, magic_word, wordCategory, hintsUsed);
+            
+            if (user_input.startsWith("HINT_")) {
+                hintsUsed++;
+                continue;
+            }
+            
+            if (user_input.startsWith("SOLVE_")) {
+                String guess = user_input.substring(6);
+                if (guess.equals(magic_word)) {
+                    printColored("🎉 AMAZING! You solved it: " + capitalize(magic_word), GREEN);
+                    currentGameScore += (health * 50) + 200; // Bonus for solving
+                    break;
+                } else {
+                    printColored("❌ Wrong guess! The word is not: " + capitalize(guess), RED);
+                    health -= 2; // Penalty for wrong solve attempt
+                    drawPic(health);
+                    wrongGuesses.add(guess);
                 }
-                
-                if (inputs.contains(user_input)) {
-                    System.out.println("You already guessed this.");
-                } // if the variable input was found in the 'inputs' array, then sop.
-                
-            } while (inputs.contains(user_input) || user_input.isEmpty());// if the string input
-                                                                                                     // was found in the
-                                                                                                     // 'inputs'
-                                                                                                     // array,then
-                                                                                                     // repeat the loop.
-                                                                                                     // else if variable
-                                                                                                     // input wasent
-                                                                                                     // found,
-                                                                                                     // then exit the
-                                                                                                     // loop
-                                                                                                     // to proceed the
-                                                                                                     // program...
+                continue;
+            }
 
-            inputs.add(user_input);// since it was already checked and cleared, we add it to the array so that the
-                                   // user won't be able to say it again.
-
-            // PART ONE DONE.
-
-            // PART TWO: CHECK IF THE INPUT EXIST IN THE GAME_NAME AND WHERE ITS LOCATED.
-            // note: the purpose of this part is to creat an array that holds the indexes
-            // where the user_input is found in the magic_word.
-            // for example: magic_word = "living dead" input = "d" therefore..array list:
-            // {7,10}
-            // BUT WAIT!! one big edit happenes here. Basically, the user input will be
-            // seperated into an array where each letter will be a String varaible. Then we
-            // will go throught the whole process from here for each individual...
-            // ...varaible. So basically, we gonna make a for loop with .length()
-            // itterations where each iteration is for each one of those varaibles. look at
-            // older versions to see a simpler version of this process.
+            inputs.add(user_input);
 
             if (magic_word.indexOf(user_input) == -1) {
-                System.out.println("WRONG: ");
+                printColored("❌ WRONG: Letter '" + user_input + "' is not in the word!", RED);
+                wrongGuesses.add(user_input);
                 health -= 1;
                 drawPic(health);
-            } // if the input does not exist in the magic_word at all, we take one life and
-              // repeat the loop from begining.
-            else {// else if it does actualy exist, then let proceed the following code.
-
-                ArrayList<String> backage1 = new ArrayList<>();
-                for (int i1 = 0; i1 < user_input.length(); i1++) {
-                    String current_holder = user_input.substring(0 + i1, 1 + i1);
-                    if (!(current_holder.equals(" ") || backage1.contains(current_holder))) {
-                        backage1.add(current_holder);
-                    }
-                }
-                ArrayList<String> backage = backage1;// this is the list that will hold each individual
-                                                     // letter
-                // From this point, user_input becomes current_letter !!
-
-                for (int current_index/* from backage */ = 0; current_index < backage.size(); current_index++) {
-                    String current_letter = backage.get(current_index);
-
-                    List<Integer> locations = new ArrayList<>();// indexes will be stored as integers //used in part2
-
-                    int pin_point = 0;// ignore
-                    int check_ahead = 0;// ignore
-
-                    do {
-                        // System.out.println(magic_word.indexOf(user_input, pin_point));
-                        locations.add(magic_word.indexOf(current_letter, pin_point)); // save the index number into the
-                                                                                      // array(locations).
-                        pin_point = (magic_word.indexOf(current_letter, pin_point)) + 1; // ignore,you must +1 so it
-                                                                                         // moves on
-                                                                                         // from that index.
-                        check_ahead = (magic_word.indexOf(current_letter, pin_point));// ignore
-                        // pint point will sets the ground to where the next index could be, and so
-                        // start searching from index (pin point) rather from begining.
-                        // check ahead wil alwyas look forword if the input repeated.if it spits out
-                        // -1,then exit this loop
-                    } while (check_ahead != -1);
-
-                    // PART TWO DONE.
-
-                    // PART THREE: MINUPILATE THE BLANK STRING AND CHAMGED INDEXES BASED ON THE
-                    // PREVIOUS STEP.
-                    // note:in the previous step, we gathered the index numbers and stored them in
-                    // the array list(locations).
-                    // now we will use that information to update the blank string and replace some
-                    // of the blanks with the right character.
-                    // for example: magic_word = "living dead" input = "d" array list: {7,10}
-                    // blank="------ ----" therefore....blank="------ d--d"
-
-                    for (int i = 0; i < locations.size(); i++) {
-                        int spot = locations.get(i);
-                        // we have the user input
-                        // we have the index location
-                        // we have blank string to modify
-                        String section1 = blank.substring(0, spot);
-                        String section2 = current_letter;
-                        String section3 = blank.substring(section1.length() + section2.length(), blank.length());
-                        blank = section1 + section2 + section3;
-                    }
-                }
-                System.out.println("CORRECT: " + spaceOut(capitalize(blank)));
+            } else {
+                printColored("✅ CORRECT: Letter '" + user_input + "' found!", GREEN);
+                correctGuesses.add(user_input);
+                
+                // Update blank string with correct letters
+                blank = updateBlankString(blank, magic_word, user_input);
+                
+                // Calculate score for correct guess
+                int letterCount = countOccurrences(magic_word, user_input);
+                currentGameScore += letterCount * 10;
+                
+                printColored("Current word: " + spaceOut(capitalize(blank)), CYAN);
             }
 
         } while (health > 0 && blank.indexOf("_") != -1);
-        if (health == 0) {
-            loseDisplay(magic_word);
-        } else {
+        
+        // Game finished - show results
+        totalGamesPlayed++;
+        if (health > 0) {
+            currentGameScore += health * 20; // Bonus for remaining health
+            totalGamesWon++;
             winDisplay();
+            printColored("🏆 Final Score: " + currentGameScore + " points!", YELLOW);
+        } else {
+            loseDisplay(magic_word);
         }
-
-        endDisplay();
+        
+        totalScore += currentGameScore;
     }
 
+    // *************************************************************************************************************************************************************************
+    // Utility method for colored output
+    public static void printColored(String message, String color) {
+        if (colorEnabled) {
+            System.out.println(color + message + RESET);
+        } else {
+            System.out.println(message);
+        }
+    }
+    
+    public static void setDifficultySettings() {
+        switch (difficulty) {
+            case "Easy":
+                maxHealth = 12;
+                hintsAvailable = 5;
+                break;
+            case "Normal":
+                maxHealth = 8;
+                hintsAvailable = 3;
+                break;
+            case "Hard":
+                maxHealth = 6;
+                hintsAvailable = 2;
+                break;
+            case "Expert":
+                maxHealth = 4;
+                hintsAvailable = 1;
+                break;
+        }
+    }
+    
+    public static void showSettings() {
+        boolean inSettings = true;
+        
+        while (inSettings) {
+            System.out.println("\n" + BOLD + YELLOW + "═══════════════ SETTINGS ═══════════════" + RESET);
+            System.out.println(BLUE + "1. Difficulty: " + difficulty + RESET);
+            System.out.println(GREEN + "2. Hints: " + (hintsEnabled ? "Enabled" : "Disabled") + RESET);
+            System.out.println(PURPLE + "3. Colors: " + (colorEnabled ? "Enabled" : "Disabled") + RESET);
+            System.out.println(RED + "4. Back to Main Menu" + RESET);
+            System.out.println(YELLOW + "═══════════════════════════════════════" + RESET);
+            System.out.print("Enter your choice (1-4): ");
+            
+            try {
+                int choice = Integer.parseInt(in.nextLine().trim());
+                switch (choice) {
+                    case 1:
+                        changeDifficulty();
+                        break;
+                    case 2:
+                        hintsEnabled = !hintsEnabled;
+                        printColored("Hints " + (hintsEnabled ? "enabled" : "disabled"), GREEN);
+                        break;
+                    case 3:
+                        colorEnabled = !colorEnabled;
+                        System.out.println("Colors " + (colorEnabled ? "enabled" : "disabled"));
+                        break;
+                    case 4:
+                        inSettings = false;
+                        break;
+                    default:
+                        printColored("Invalid choice. Please try again.", RED);
+                }
+            } catch (NumberFormatException e) {
+                printColored("Invalid input. Please enter a number.", RED);
+            }
+        }
+    }
+    
+    public static void changeDifficulty() {
+        System.out.println("\n" + CYAN + "Select difficulty level:" + RESET);
+        System.out.println("1. Easy (12 lives, 5 hints)");
+        System.out.println("2. Normal (8 lives, 3 hints)");
+        System.out.println("3. Hard (6 lives, 2 hints)");
+        System.out.println("4. Expert (4 lives, 1 hint)");
+        System.out.print("Enter choice (1-4): ");
+        
+        try {
+            int choice = Integer.parseInt(in.nextLine().trim());
+            switch (choice) {
+                case 1: difficulty = "Easy"; break;
+                case 2: difficulty = "Normal"; break;
+                case 3: difficulty = "Hard"; break;
+                case 4: difficulty = "Expert"; break;
+                default: 
+                    printColored("Invalid choice. Keeping current difficulty.", RED);
+                    return;
+            }
+            printColored("Difficulty set to: " + difficulty, GREEN);
+        } catch (NumberFormatException e) {
+            printColored("Invalid input. Keeping current difficulty.", RED);
+        }
+    }
+    
+    public static void showStatistics() {
+        System.out.println("\n" + BOLD + GREEN + "═══════════════ STATISTICS ═══════════════" + RESET);
+        System.out.println(CYAN + "Games Played: " + totalGamesPlayed + RESET);
+        System.out.println(GREEN + "Games Won: " + totalGamesWon + RESET);
+        System.out.println(RED + "Games Lost: " + (totalGamesPlayed - totalGamesWon) + RESET);
+        
+        if (totalGamesPlayed > 0) {
+            double winRate = (double) totalGamesWon / totalGamesPlayed * 100;
+            System.out.println(YELLOW + "Win Rate: " + String.format("%.1f", winRate) + "%" + RESET);
+        }
+        
+        System.out.println(PURPLE + "Total Score: " + totalScore + " points" + RESET);
+        
+        if (totalGamesPlayed > 0) {
+            int avgScore = totalScore / totalGamesPlayed;
+            System.out.println(BLUE + "Average Score: " + avgScore + " points" + RESET);
+        }
+        
+        System.out.println(CYAN + "Current Difficulty: " + difficulty + RESET);
+        System.out.println(GREEN + "═══════════════════════════════════════" + RESET);
+        
+        System.out.println("\nPress Enter to continue...");
+        in.nextLine();
+    }
+    
+    public static void showInstructions() {
+        System.out.println("\n" + BOLD + BLUE + "═══════════════ HOW TO PLAY ═══════════════" + RESET);
+        System.out.println(CYAN + "🎯 OBJECTIVE:" + RESET);
+        System.out.println("   Guess the hidden word before running out of lives!");
+        
+        System.out.println("\n" + YELLOW + "🎮 CONTROLS:" + RESET);
+        System.out.println("   • Type a letter and press Enter to guess");
+        System.out.println("   • Type 'hint' for a helpful clue (limited uses)");
+        System.out.println("   • Type 'solve [word]' to guess the entire word");
+        
+        System.out.println("\n" + GREEN + "📊 SCORING:" + RESET);
+        System.out.println("   • +10 points per correct letter");
+        System.out.println("   • +20 points per remaining life at the end");
+        System.out.println("   • +200 bonus for solving the word directly");
+        
+        System.out.println("\n" + PURPLE + "⚙️ DIFFICULTY LEVELS:" + RESET);
+        System.out.println("   • Easy: 12 lives, 5 hints");
+        System.out.println("   • Normal: 8 lives, 3 hints");
+        System.out.println("   • Hard: 6 lives, 2 hints");
+        System.out.println("   • Expert: 4 lives, 1 hint");
+        
+        System.out.println("\n" + RED + "⚠️ TIPS:" + RESET);
+        System.out.println("   • Wrong solve attempts cost 2 lives");
+        System.out.println("   • Common letters like E, A, R, S, T are good starting guesses");
+        System.out.println("   • Use hints wisely - they're limited!");
+        
+        System.out.println(BLUE + "═══════════════════════════════════════" + RESET);
+        System.out.println("\nPress Enter to continue...");
+        in.nextLine();
+    }
+    
+    public static void showGameStatus(int health, int hintsUsed, ArrayList<String> correct, ArrayList<String> wrong, String blank) {
+        System.out.println("\n" + BOLD + CYAN + "═══════════ GAME STATUS ═══════════" + RESET);
+        System.out.println(health > 3 ? GREEN + "❤️ Lives: " + health : RED + "💀 Lives: " + health + RESET);
+        System.out.println(YELLOW + "🏆 Score: " + currentGameScore + RESET);
+        System.out.println(BLUE + "💡 Hints remaining: " + (hintsAvailable - hintsUsed) + RESET);
+        
+        if (!correct.isEmpty()) {
+            System.out.println(GREEN + "✅ Correct: " + String.join(", ", correct) + RESET);
+        }
+        if (!wrong.isEmpty()) {
+            System.out.println(RED + "❌ Wrong: " + String.join(", ", wrong) + RESET);
+        }
+        System.out.println(CYAN + "═══════════════════════════════════" + RESET);
+    }
+    
+    public static void displayGameInfo(String category) {
+        System.out.println("\n" + BOLD + PURPLE + "🎮 GAME INFO 🎮" + RESET);
+        System.out.println(CYAN + "Category: " + category + RESET);
+        System.out.println(YELLOW + "Difficulty: " + difficulty + RESET);
+        System.out.println(GREEN + "Lives: " + maxHealth + RESET);
+        System.out.println(BLUE + "Hints available: " + hintsAvailable + RESET);
+    }
+    
+    public static String getUserInput(ArrayList<String> inputs, String magicWord, String category, int hintsUsed) {
+        String userInput;
+        
+        do {
+            System.out.print("\n" + CYAN + "Your guess (letter/hint/solve [word]): " + RESET);
+            userInput = extraSpaceFilter(in.nextLine()).toLowerCase();
+            
+            if (userInput.isEmpty()) {
+                printColored("Invalid input, try again.", RED);
+                continue;
+            }
+            
+            // Handle hint request
+            if (userInput.equals("hint")) {
+                if (!hintsEnabled) {
+                    printColored("Hints are disabled in settings.", RED);
+                    continue;
+                }
+                if (hintsUsed >= hintsAvailable) {
+                    printColored("No hints remaining!", RED);
+                    continue;
+                }
+                
+                String hint = getHint(magicWord, category, inputs);
+                printColored("💡 HINT: " + hint, YELLOW);
+                return "HINT_USED";
+            }
+            
+            // Handle solve attempt
+            if (userInput.startsWith("solve ")) {
+                String guess = userInput.substring(6).trim();
+                if (guess.isEmpty()) {
+                    printColored("Please provide a word to solve (e.g., 'solve elephant')", RED);
+                    continue;
+                }
+                return "SOLVE_" + guess;
+            }
+            
+            // Validate single letter input
+            if (userInput.length() != 1 || !Character.isLetter(userInput.charAt(0))) {
+                printColored("Please enter a single letter, 'hint', or 'solve [word]'", RED);
+                continue;
+            }
+            
+            if (inputs.contains(userInput)) {
+                printColored("You already guessed '" + userInput + "'", RED);
+            }
+            
+        } while (inputs.contains(userInput) || userInput.isEmpty());
+        
+        return userInput;
+    }
+    
+    public static String getHint(String magicWord, String category, ArrayList<String> guessed) {
+        String[] hints = {
+            "Category: " + category,
+            "Word length: " + magicWord.length() + " characters",
+            "First letter: " + Character.toUpperCase(magicWord.charAt(0)),
+            "Last letter: " + Character.toUpperCase(magicWord.charAt(magicWord.length() - 1)),
+        };
+        
+        // Try to reveal a random unguessed letter
+        ArrayList<Character> unguessedLetters = new ArrayList<>();
+        for (char c : magicWord.toCharArray()) {
+            if (Character.isLetter(c) && !guessed.contains(String.valueOf(c))) {
+                unguessedLetters.add(c);
+            }
+        }
+        
+        if (!unguessedLetters.isEmpty()) {
+            char randomLetter = unguessedLetters.get((int)(Math.random() * unguessedLetters.size()));
+            return "The word contains the letter: " + Character.toUpperCase(randomLetter);
+        }
+        
+        // Fallback to basic hints
+        return hints[(int)(Math.random() * hints.length)];
+    }
+    
+    public static String updateBlankString(String blank, String magicWord, String letter) {
+        StringBuilder newBlank = new StringBuilder(blank);
+        
+        for (int i = 0; i < magicWord.length(); i++) {
+            if (magicWord.charAt(i) == letter.charAt(0)) {
+                newBlank.setCharAt(i, letter.charAt(0));
+            }
+        }
+        
+        return newBlank.toString();
+    }
+    
+    public static int countOccurrences(String word, String letter) {
+        int count = 0;
+        for (int i = 0; i < word.length(); i++) {
+            if (word.charAt(i) == letter.charAt(0)) {
+                count++;
+            }
+        }
+        return count;
+    }
     // *************************************************************************************************************************************************************************
     // this method takes whatever string and space it out by adding " " after each
     // letter.
@@ -316,22 +610,24 @@ public class Final {
 
     // *************************************************************************************************************************************************************************
     public static void loseDisplay(String magicWord) {
-        System.out.println(" ___________________  __________________  _______________________");
+        System.out.println(RED + " ___________________  __________________  _______________________");
         System.out.println("|                   ||       _--_       ||         _____         |");
         System.out.println("|                   ||     _(    )_     ||        |     |\\       |");
         System.out.println("|      00:00        ||    (________)    ||     ___|     ||__     |");
         System.out.println("|                   ||  _____))((_____  ||~~~~|    R.I.P    |\\~~~|");
-        System.out.println("| Bomb Iintiated... || (______________) ||    |___  lol  ___||   |");
+        System.out.println("| Bomb Initiated... || (______________) ||    |___  lol  ___||   |");
         System.out.println("|                   ||_______))((_______||        |     |\\__\\|   |");
-        System.out.println("|___________________||__________________||________|_____||_______|");
+        System.out.println("|___________________||__________________||________|_____||_______|" + RESET);
         System.out.println();
-        System.out.println("                          GAME OVER");
-        System.out.println("The word was: " + capitalize(magicWord));
+        printColored("💥 GAME OVER 💥", BOLD + RED);
+        printColored("The word was: " + capitalize(magicWord), YELLOW);
+        printColored("Score this round: " + currentGameScore + " points", CYAN);
+        printColored("Better luck next time! 💪", BLUE);
     }
 
     // *************************************************************************************************************************************************************************
     public static void winDisplay() {
-        System.out.println(" ____________________________________________");
+        System.out.println(GREEN + " ____________________________________________");
         System.out.println("| ____ _____---===___--___-   _|             |");
         System.out.println("| _______-----____===_       |_|             |");
         System.out.println("|  ____----======______-- -_   |  (^0^)/     |");
@@ -339,8 +635,10 @@ public class Final {
         System.out.println("| ____--====    __---  __--     ___(_)____   |");
         System.out.println("|   __--____-- __----__     ~~~ ]_] (8) | \\  |");
         System.out.println("| ________------==__    ~~~~~~~~]_]__ __|_/  |");
-        System.out.println("|____________________________________________|");
-        System.out.println("\n                    YOU WIN");
+        System.out.println("|____________________________________________|" + RESET);
+        System.out.println();
+        printColored("🎉 CONGRATULATIONS! YOU WIN! 🎉", BOLD + GREEN);
+        printColored("🏆 You're a Hangman Master! 🏆", YELLOW);
     }
 
     // ************************************************************************************************************************************************************************
@@ -477,10 +775,15 @@ public class Final {
     }
 
     // **************************************************************************************************************************************************************************
-    // display rules, instructions, how to play etc. the words/letters counter will
-    // be done in hideStringAndDisplay string.
+    // display rules, instructions, how to play etc.
     public static void instructionsDisplay() {
-        System.out.println("INSTRUCTIONS:\n*Guess the blank text. \n*No numbers or symbols. \n*You have eight tires.");
+        printColored("INSTRUCTIONS:", BOLD + CYAN);
+        printColored("• Guess the blank text letter by letter", YELLOW);
+        printColored("• No numbers or symbols allowed", YELLOW);
+        printColored("• Lives depend on difficulty level", YELLOW);
+        printColored("• Type 'hint' for clues (limited uses)", GREEN);
+        printColored("• Type 'solve [word]' to guess the entire word", BLUE);
+        printColored("• Wrong solve attempts cost 2 lives!", RED);
     }
 
     // *************************************************************************************************************************************************************************
@@ -514,64 +817,101 @@ public class Final {
     }
 
     // *************************************************************************************************************************************************************************
-    public static String inGameWordSelector() {
-        System.out.println("Enter te number of your preferd catigory:");
+    public static String[] inGameWordSelector() {
+        printColored("Enter the number of your preferred category:", CYAN);
         System.out.println(
-                "1.Animals \n2.Historical figures \n3.Movies \n4.Sports \n5.Fruit & vegetables \n6.Transportation \n7.Places \n8.Random");
-        int catigory = getCatigoryNumber();
-        // Make all the arrays
-        String animal[] = { "elephant", "lion", "tiger", "rabbit", "snake", "giraffe", "wolf", "owl", "bear", "deer",
-                "eagle", "dolphin", "vulture", "whale", "mouse" };
-        String historical[] = { "abraham lincoln", "john f kennedy", "adolf hitler", "beneto mussolini",
-                "joseph stalin", "mao zi dung", "winston churchill", "genghis khan", "albert einstein",
-                "alexander the great", "charles darwin", "king louis", "muhammad ali", "hammurabi" };
-        String movies[] = { "Home alone", "Finding nemo", "titanic", "Toy story", "The Incredibles", "Shrek",
-                "Mission Impossible", "KungFu panda", "godzilla", "Avatar", "Star Wars", "Lion King", "Interstellar",
-                "Frozen" };
-        String sport[] = { "soccer", "Football", "volleyball", "Lacrosse", "cricket", "hockey", "baseball", "Badminton",
-                "Nascar", "Formula one", "rally", "fencing", "archery", "rugby" };
-        String fruit_veg[] = { "banana", "watermelon", "mango", "gauava", "apple", "Pineapple", "Kiwifruit", "Carrot",
-                "Eggplant", "strawberry", "cherry" };
-        String transportation[] = { "Car", "Plane", "Bus", "boat", "tram", "train", "air balloon", "submarine" };
-        String places[] = { "Great Pyramid of Giza", "statue of liberty", "eiffel tower", "Taj Mahal", "Niagara Falls",
-                "Great Wall of China", "Tower of Pisa", "Mount Everest", "Big Ben ", "Burj Khalifa", "Hagia Sophia",
-                "Sistine chapel", "Vatican City", "Mount Rushmore" };
-        // arrays are made.
+                "1. 🐘 Animals \n2. 👑 Historical figures \n3. 🎬 Movies \n4. ⚽ Sports \n5. 🍎 Fruit & vegetables \n6. 🚗 Transportation \n7. 🏛️ Places \n8. 🎲 Random");
+        int category = getCategoryNumber();
+        
+        // Expanded word arrays with more words
+        String animal[] = { 
+            "elephant", "lion", "tiger", "rabbit", "snake", "giraffe", "wolf", "owl", "bear", "deer",
+            "eagle", "dolphin", "vulture", "whale", "mouse", "kangaroo", "penguin", "octopus", "butterfly", "rhinoceros",
+            "cheetah", "zebra", "hippo", "crocodile", "gorilla", "chimpanzee", "orangutan", "koala", "panda", "sloth"
+        };
+        
+        String historical[] = { 
+            "abraham lincoln", "john f kennedy", "adolf hitler", "benito mussolini",
+            "joseph stalin", "mao zedong", "winston churchill", "genghis khan", "albert einstein",
+            "alexander the great", "charles darwin", "king louis", "muhammad ali", "hammurabi",
+            "cleopatra", "napoleon bonaparte", "leonardo da vinci", "galileo galilei", "isaac newton", "shakespeare"
+        };
+        
+        String movies[] = { 
+            "home alone", "finding nemo", "titanic", "toy story", "the incredibles", "shrek",
+            "mission impossible", "kung fu panda", "godzilla", "avatar", "star wars", "lion king", "interstellar",
+            "frozen", "the matrix", "jurassic park", "the avengers", "harry potter", "lord of the rings", "pirates of the caribbean"
+        };
+        
+        String sport[] = { 
+            "soccer", "football", "volleyball", "lacrosse", "cricket", "hockey", "baseball", "badminton",
+            "nascar", "formula one", "rally", "fencing", "archery", "rugby", "basketball", "tennis", 
+            "golf", "swimming", "cycling", "skiing", "snowboarding", "surfing", "skateboarding", "boxing"
+        };
+        
+        String fruit_veg[] = { 
+            "banana", "watermelon", "mango", "guava", "apple", "pineapple", "kiwifruit", "carrot",
+            "eggplant", "strawberry", "cherry", "orange", "grape", "tomato", "potato", "onion",
+            "broccoli", "spinach", "lettuce", "cucumber", "pepper", "avocado", "blueberry", "raspberry"
+        };
+        
+        String transportation[] = { 
+            "car", "plane", "bus", "boat", "tram", "train", "air balloon", "submarine",
+            "bicycle", "motorcycle", "helicopter", "rocket", "spaceship", "yacht", "scooter", "truck",
+            "ambulance", "fire truck", "police car", "taxi", "limousine", "jet", "cruise ship", "ferry"
+        };
+        
+        String places[] = { 
+            "great pyramid of giza", "statue of liberty", "eiffel tower", "taj mahal", "niagara falls",
+            "great wall of china", "tower of pisa", "mount everest", "big ben", "burj khalifa", "hagia sophia",
+            "sistine chapel", "vatican city", "mount rushmore", "machu picchu", "stonehenge", "colosseum",
+            "brooklyn bridge", "golden gate bridge", "sydney opera house", "christ the redeemer", "petra"
+        };
 
+        String[] categories = {"Animals", "Historical Figures", "Movies", "Sports", "Fruits & Vegetables", "Transportation", "Places"};
+        
         int random;
-        String magic_word = ""; // must give value to avoid "variable magic_word might not have been
-                                // initialized" error.
-        switch (catigory) {
+        String magic_word = "";
+        String categoryName = "";
+        
+        switch (category) {
             case 1:
                 random = (int) (Math.random() * animal.length);
                 magic_word = animal[random];
+                categoryName = categories[0];
                 break;
             case 2:
                 random = (int) (Math.random() * historical.length);
                 magic_word = historical[random];
+                categoryName = categories[1];
                 break;
             case 3:
                 random = (int) (Math.random() * movies.length);
                 magic_word = movies[random];
+                categoryName = categories[2];
                 break;
             case 4:
                 random = (int) (Math.random() * sport.length);
                 magic_word = sport[random];
+                categoryName = categories[3];
                 break;
             case 5:
                 random = (int) (Math.random() * fruit_veg.length);
                 magic_word = fruit_veg[random];
+                categoryName = categories[4];
                 break;
             case 6:
                 random = (int) (Math.random() * transportation.length);
                 magic_word = transportation[random];
+                categoryName = categories[5];
                 break;
             case 7:
                 random = (int) (Math.random() * places.length);
                 magic_word = places[random];
+                categoryName = categories[6];
                 break;
         }
-        return magic_word;
+        return new String[]{magic_word, categoryName};
     }
 
     // *************************************************************************************************************************************************************************
@@ -614,7 +954,7 @@ public class Final {
     // }
     // return number;
     // }
-    public static int getCatigoryNumber() {
+    public static int getCategoryNumber() {
         String input;
         int category = -1;
         while (category == -1) {
@@ -626,11 +966,12 @@ public class Final {
                 }
             }
             if (category == -1) {
-                System.out.println("Invalid input. Please enter a number between 1 and 8:");
+                printColored("Invalid input. Please enter a number between 1 and 8:", RED);
             }
         }
         if (category == 8) {
             category = (int) (Math.random() * 7) + 1;
+            printColored("🎲 Random category selected!", PURPLE);
         }
         return category;
     }
@@ -675,8 +1016,20 @@ public class Final {
 
     // *************************************************************************************************************************************************************************
     public static void endDisplay() {
-        sopln("\n*************************************************************************");
-        sop("                   THANK YOU FOR PLAYING");
+        System.out.println("\n" + BOLD + CYAN + "*************************************************************************" + RESET);
+        printColored("🎮 THANKS FOR PLAYING THE ENHANCED HANGMAN GAME! 🎮", BOLD + GREEN);
+        printColored("📊 Final Statistics:", YELLOW);
+        printColored("   Games Played: " + totalGamesPlayed, CYAN);
+        printColored("   Games Won: " + totalGamesWon, GREEN);
+        printColored("   Total Score: " + totalScore + " points", PURPLE);
+        
+        if (totalGamesPlayed > 0) {
+            double winRate = (double) totalGamesWon / totalGamesPlayed * 100;
+            printColored("   Win Rate: " + String.format("%.1f", winRate) + "%", BLUE);
+        }
+        
+        printColored("Hope you enjoyed the new features! 🌟", YELLOW);
+        System.out.println(CYAN + "*************************************************************************" + RESET);
     }
 
     // ************************************************************************************************************************************************************************

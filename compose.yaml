@@ -1,0 +1,14 @@
+# Docker Compose configuration for Java Hangman Game
+# This is a console application that requires interactive input
+
+services:
+  hangman-game:
+    build:
+      context: .
+    # For interactive console applications, we need to allocate a TTY and keep STDIN open
+    stdin_open: true
+    tty: true
+    # Optional: Mount data directory if you want to modify word files without rebuilding
+    volumes:
+      - ./data:/app/data:ro  # Read-only mount of data files
+
